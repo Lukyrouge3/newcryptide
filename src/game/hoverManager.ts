@@ -1,5 +1,6 @@
 import p5 from "p5";
 import Drawable from "./abstracts/drawable";
+import GameTile from "./gameTile";
 
 export default class HoverManager {
     private p: p5;
@@ -22,7 +23,6 @@ export default class HoverManager {
             }
         }
         if (newHover !== this.hover) {
-            console.log("Hover changed", newHover);
             if (this.hover) {
                 this.hover.onMouseLeave();
             }

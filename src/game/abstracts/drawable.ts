@@ -6,6 +6,7 @@ export default abstract class Drawable {
     protected p: p5;
     public children: Drawable[] = [];
     public static drawables: Drawable[] = [];
+    public invisible: boolean = false;
 
     abstract draw(): void;
     constructor(p: p5, x: number, y: number) {
