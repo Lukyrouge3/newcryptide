@@ -6,7 +6,9 @@ export enum StructureType {
 
 export enum StructureColor {
     BLACK,
-    WHITE
+    WHITE,
+    GREEN,
+    BLUE
 }
 
 export enum AnimalType {

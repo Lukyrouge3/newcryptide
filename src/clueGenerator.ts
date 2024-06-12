@@ -35,7 +35,7 @@ export abstract class Clue {
     public static getNeighbors(data: TileData[], tile: TileData, distance: number): TileData[] {
         const neighbors: TileData[] = [];
         let toVisit: TileData[] = [tile];
-        let tmp: TileData[] = [];
+        let tmp: number[][] = [];
 
         while (distance >= 0) {
             while (toVisit.length > 0) {
@@ -48,12 +48,14 @@ export abstract class Clue {
                         const hex = { col: current.x, row: current.y };
                         // console.log(current, hex);
                         const neighbor_pos = Clue.oddq_offset_neighbor(hex, i);
-                        const neighbor = data.find(tile => tile.x === neighbor_pos[0] && tile.y === neighbor_pos[1]);
-                        if (neighbor) tmp.push(neighbor);
+                        tmp.push(neighbor_pos);
                     }
                 }
             }
-            toVisit = tmp;
+            for (const pos of tmp) {
+                const tile = data.find(tile => tile.x === pos[0] && tile.y === pos[1]);
+                if (tile) toVisit.push(tile);
+            }
             tmp = [];
             distance--;
         }
@@ -152,7 +154,7 @@ export function generateAllClues(data: TileData[], x: number, y: number) {
     const biomes = [Biome.FOREST, Biome.DESERT, Biome.MOUNTAIN, Biome.WATER, Biome.SWAMP];
     const animals = [AnimalType.BEAR, AnimalType.PUMA, AnimalType.NONE];
     const structure_types = [StructureType.CABIN, StructureType.STONE, StructureType.NONE];
-    const structure_colors = [StructureColor.BLACK, StructureColor.WHITE];
+    const structure_colors = [StructureColor.BLACK, StructureColor.WHITE, StructureColor.GREEN, StructureColor.BLUE];
 
     // console.log(data.find(tile => tile.x === x && tile.y === y));
     // console.log(Clue.getNeighbors(data, data.find(tile => tile.x === x && tile.y === y)!, 1).length);
@@ -199,7 +201,7 @@ export function generateAllClues(data: TileData[], x: number, y: number) {
     return clues;
 }
 
-export function generateData(seed: string = "cryptide") {
+export function generateData(seed: string = "cryptide2") {
     const data: TileData[] = [];
     const sblocks = [...blocks];
     shuffleArray(sblocks, seed);
@@ -227,6 +229,18 @@ export function generateData(seed: string = "cryptide") {
     i = Math.floor(rand.next() * data.length);
     data[i].structure_type = StructureType.CABIN;
     data[i].structure_color = StructureColor.WHITE;
+    i = Math.floor(rand.next() * data.length);
+    data[i].structure_type = StructureType.STONE;
+    data[i].structure_color = StructureColor.GREEN;
+    i = Math.floor(rand.next() * data.length);
+    data[i].structure_type = StructureType.CABIN;
+    data[i].structure_color = StructureColor.GREEN;
+    i = Math.floor(rand.next() * data.length);
+    data[i].structure_type = StructureType.STONE;
+    data[i].structure_color = StructureColor.BLUE;
+    i = Math.floor(rand.next() * data.length);
+    data[i].structure_type = StructureType.CABIN;
+    data[i].structure_color = StructureColor.BLUE;
 
     return data;
 }
@@ -250,14 +264,17 @@ export function generateCluesCombination(clues: Clue[], data: TileData[], n: num
 export function getPerfectClueSets(clues_combination: Clue[][], data: TileData[], x: number, y: number) {
     const perfect_clue_sets: Clue[][] = [];
     for (const clues of clues_combination) {
-        let tmp = data;
+        let tmp: TileData[] = [...data];
         for (const clue of clues) {
-            tmp = clue.filter(tmp);
+            tmp = tmp.filter(x => clue.filter(data).includes(x));
+            if (!tmp.find(tile => tile.x === x && tile.y === y) || tmp.length == 0) break;
         }
         if (tmp.find(tile => tile.x === x && tile.y === y) && tmp.length === 1) {
             // console.log(tmp.length);
             perfect_clue_sets.push(clues);
+            break;
         }
+        console.log(tmp.length);
     }
     return perfect_clue_sets;
 }

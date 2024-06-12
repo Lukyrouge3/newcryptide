@@ -74,6 +74,15 @@ export default class TileGroup {
         }
     }
 
+    public highlightTiles(tiles: TileData[]) {
+        for (let tile of tiles) {
+            const t = this.tiles.find(t => t.data.x == tile.x && t.data.y == tile.y);
+            if (t) {
+                t.highlight();
+            }
+        }
+    }
+
     public static getInstance(): TileGroup {
         if (!TileGroup.instance) {
             throw new Error("TileGroup not initialized");

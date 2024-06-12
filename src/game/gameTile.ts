@@ -1,6 +1,6 @@
 import p5, { Vector } from "p5";
 import Tile from "./abstracts/tile";
-import { AnimalType, StructureType } from "./enums";
+import { AnimalType, StructureColor, StructureType } from "./enums";
 import { TileData } from "../clueGenerator";
 import TileGroup from "./tileGroup";
 
@@ -17,7 +17,7 @@ export const biomeColors = (p: p5) => {
         [Biome.FOREST]: p.color(50, 200, 50),
         [Biome.DESERT]: p.color(255, 255, 100),
         [Biome.MOUNTAIN]: p.color(200, 200, 200),
-        [Biome.WATER]: p.color(50, 50, 255),
+        [Biome.WATER]: p.color(50, 50, 200),
         [Biome.SWAMP]: p.color(100, 50, 150)
     }
 };
@@ -27,6 +27,7 @@ export default class GameTile extends Tile {
     private col: number;
     private row: number;
     public data: TileData;
+    public highlighted: boolean = false;
 
     constructor(p: p5, x: number, y: number, data: TileData) {
         const color = biomeColors(p)[data.biome];
@@ -62,12 +63,34 @@ export default class GameTile extends Tile {
     private drawStructure() {
         this.p.push();
         this.p.translate(this.pos.x, this.pos.y);
-        this.p.stroke(0);
+        if (this.data.structure_color == StructureColor.BLACK) this.p.stroke(0);
+        if (this.data.structure_color == StructureColor.BLUE) this.p.stroke(0, 0, 255);
+        if (this.data.structure_color == StructureColor.WHITE) this.p.stroke(255);
+        if (this.data.structure_color == StructureColor.GREEN) this.p.stroke(0, 255, 0);
         this.p.strokeWeight(1);
         this.p.noFill();
         const width = this.p.textWidth(StructureType[this.data.structure_type]);
         this.p.text(StructureType[this.data.structure_type], -width / 2, this.p.textAscent() / 2 + 30);
         this.p.pop();
+    }
+
+    private drawHighlight() {
+        if (this.highlighted) {
+            this.p.push();
+            this.p.translate(this.pos.x, this.pos.y);
+            this.p.stroke(255, 0, 0);
+            this.p.strokeWeight(4);
+            this.p.noFill();
+            this.p.beginShape();
+            this.p.vertex(-Tile.width, 0);
+            this.p.vertex(-1 / 2 * Tile.width, 1 / 2 * this.p.sqrt(3) * Tile.width);
+            this.p.vertex(1 / 2 * Tile.width, 1 / 2 * this.p.sqrt(3) * Tile.width);
+            this.p.vertex(Tile.width, 0);
+            this.p.vertex(1 / 2 * Tile.width, -1 / 2 * this.p.sqrt(3) * Tile.width);
+            this.p.vertex(-1 / 2 * Tile.width, -1 / 2 * this.p.sqrt(3) * Tile.width);
+            this.p.endShape(this.p.CLOSE);
+            this.p.pop();
+        }
     }
 
     public draw() {
@@ -79,11 +102,16 @@ export default class GameTile extends Tile {
         if (this.data.structure_type != StructureType.NONE) {
             this.drawStructure();
         }
+        this.drawHighlight();
     }
 
     public onMousePressed(): void {
         super.onMousePressed();
         // const tileGrp = TileGroup.getInstance();
         // tileGrp.highlightNeighbors(this.col, this.row, 3);
+    }
+
+    public highlight() {
+        this.highlighted = true;
     }
 }
