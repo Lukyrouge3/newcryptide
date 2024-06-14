@@ -16,3 +16,11 @@ export enum AnimalType {
     BEAR,
     NONE
 }
+
+export enum Biome {
+    FOREST,
+    DESERT,
+    MOUNTAIN,
+    WATER,
+    SWAMP
+}

@@ -1,16 +1,7 @@
 import p5, { Vector } from "p5";
 import Tile from "./abstracts/tile";
-import { AnimalType, StructureColor, StructureType } from "./enums";
-import { TileData } from "../clueGenerator";
-import TileGroup from "./tileGroup";
-
-export enum Biome {
-    FOREST,
-    DESERT,
-    MOUNTAIN,
-    WATER,
-    SWAMP
-}
+import { AnimalType, Biome, StructureColor, StructureType } from "./enums";
+import { TileData } from "./abstracts/tileData";
 
 export const biomeColors = (p: p5) => {
     return {

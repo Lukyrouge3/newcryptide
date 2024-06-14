@@ -18,14 +18,6 @@ export type Structure = {
     type: number
 }
 
-export function shuffleArray(array: any[], seed: string) {
-    const rand = new Rand(seed == "" ? undefined : seed);
-    for (let i = array.length - 1; i > 0; i--) {
-        const j = Math.floor(rand.next() * (i + 1));
-        [array[i], array[j]] = [array[j], array[i]];
-    }
-}
-
 export function generateMap(width: number, height: number, seed: string) {
     const shuffledBlocks = [...blocks];
     shuffleArray(shuffledBlocks, seed);

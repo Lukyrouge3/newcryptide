@@ -1,21 +1,19 @@
 import assert from 'assert';
 import { shuffleArray } from './game/tileGroup';
 import Rand from 'rand-seed';
-import { Biome } from './game/gameTile';
-import { AnimalType, StructureColor, StructureType } from './game/enums';
+import { AnimalType, Biome, StructureColor, StructureType } from './game/enums';
+import { TileData } from './game/abstracts/tileData';
 
-export type TileData = {
-    biome: Biome;
-    x: number;
-    y: number;
-    animal: AnimalType;
-    structure_type: StructureType;
-    structure_color: StructureColor;
-}
+
 
 export abstract class Clue {
+    protected originalData: TileData[];
     public abstract filter(data: TileData[]): TileData[];
     // public abstract toString(): string;
+
+    constructor(originalData: TileData[]) {
+        this.originalData = originalData;
+    }
 
     private static oddq_direction_differences = [
         // even cols 
@@ -67,8 +65,8 @@ export abstract class Clue {
 export class InTerrainAmongTwoClue extends Clue {
     private biomes: Biome[];
 
-    constructor(biome1: Biome, biome2: Biome) {
-        super();
+    constructor(originalData: TileData[], biome1: Biome, biome2: Biome) {
+        super(originalData);
         this.biomes = [biome1, biome2];
         assert(biome1 !== biome2, "Biomes must be different");
     }
@@ -83,8 +81,8 @@ export class InOrNextToBiomeOrTerritoryClue extends Clue {
     private biome: Biome | null;
     private animal: AnimalType;
 
-    constructor(biome: Biome | null, animal: AnimalType = AnimalType.NONE) {
-        super();
+    constructor(originalData: TileData[], biome: Biome | null, animal: AnimalType = AnimalType.NONE) {
+        super(originalData);
         this.biome = biome;
         this.animal = animal;
         assert(this.biome !== null || this.animal != AnimalType.NONE, "Clue must have at least one condition");
@@ -93,7 +91,7 @@ export class InOrNextToBiomeOrTerritoryClue extends Clue {
     public filter(data: TileData[]): TileData[] {
         const res: TileData[] = [];
         for (const tile of data) {
-            const neighbors = Clue.getNeighbors(data, tile, 1);
+            const neighbors = Clue.getNeighbors(this.originalData, tile, 1);
             if (this.biome != null && neighbors.filter(neighbor => neighbor.biome === this.biome).length > 0)
             {
                 if (res.filter(t => t.x === tile.x && t.y === tile.y).length == 0) res.push(tile);
@@ -109,8 +107,8 @@ export class InOrWithin2OfTerritoryOrStructureClue extends Clue {
     private animal: AnimalType;
     private structure_type: StructureType;
 
-    constructor(animal: AnimalType, structure_type: StructureType) {
-        super();
+    constructor(originalData: TileData[], animal: AnimalType, structure_type: StructureType) {
+        super(originalData);
         this.animal = animal;
         this.structure_type = structure_type;
         assert(this.animal !== AnimalType.NONE || this.structure_type !== StructureType.NONE, "Clue must have at least one condition");
@@ -119,7 +117,7 @@ export class InOrWithin2OfTerritoryOrStructureClue extends Clue {
     public filter(data: TileData[]): TileData[] {
         const res: TileData[] = [];
         for (const tile of data) {
-            const neighbors = Clue.getNeighbors(data, tile, 2);
+            const neighbors = Clue.getNeighbors(this.originalData, tile, 2);
             if (this.animal != AnimalType.NONE && neighbors.filter(neighbor => neighbor.animal === this.animal).length > 0) {
                 if (res.filter(t => t.x === tile.x && t.y === tile.y).length === 0) res.push(tile);
             }
@@ -133,15 +131,15 @@ export class InOrWithin2OfTerritoryOrStructureClue extends Clue {
 export class InOrWithin3OfStructureColorClue extends Clue {
     private structure_color: StructureColor;
 
-    constructor(structure_color: StructureColor) {
-        super();
+    constructor(originalData: TileData[], structure_color: StructureColor) {
+        super(originalData);
         this.structure_color = structure_color;
     }
 
     public filter(data: TileData[]): TileData[] {
         const res: TileData[] = [];
         for (const tile of data) {
-            const neighbors = Clue.getNeighbors(data, tile, 3);
+            const neighbors = Clue.getNeighbors(this.originalData, tile, 3);
             if (neighbors.filter(neighbor => neighbor.structure_color === this.structure_color && neighbor.structure_type != StructureType.NONE).length > 0)
                 if (res.filter(t => t.x === tile.x && t.y === tile.y).length === 0) res.push(tile);
         }
@@ -164,21 +162,21 @@ export function generateAllClues(data: TileData[], x: number, y: number) {
             const biome1 = biomes[i];
             const biome2 = biomes[j];
             if (biome1 === biome2) continue;
-            const c = new InTerrainAmongTwoClue(biome1, biome2);
+            const c = new InTerrainAmongTwoClue(data, biome1, biome2);
             if (c.filter(data).find(tile => tile.x === x && tile.y === y))
                 clues.push(c);
         }
     }
 
     for (const biome of biomes) {
-        const c = new InOrNextToBiomeOrTerritoryClue(biome, AnimalType.NONE);
+        const c = new InOrNextToBiomeOrTerritoryClue(data, biome, AnimalType.NONE);
         if (c.filter(data).find(tile => tile.x === x && tile.y === y))
             clues.push(c);
     }
 
     for (const animal of animals) {
         if (animal === AnimalType.NONE) continue;
-        const c = new InOrNextToBiomeOrTerritoryClue(null, animal);
+        const c = new InOrNextToBiomeOrTerritoryClue(data, null, animal);
         if (c.filter(data).find(tile => tile.x === x && tile.y === y))
             clues.push(c);
     }
@@ -186,14 +184,14 @@ export function generateAllClues(data: TileData[], x: number, y: number) {
     for (const animal of animals) {
         for (const structure_type of structure_types) {
             if (animal === AnimalType.NONE && structure_type === StructureType.NONE) continue;
-            const c = new InOrWithin2OfTerritoryOrStructureClue(animal, structure_type);
+            const c = new InOrWithin2OfTerritoryOrStructureClue(data, animal, structure_type);
             if (c.filter(data).find(tile => tile.x === x && tile.y === y))
                 clues.push(c);
         }
     }
 
     for (const structure_color of structure_colors) {
-        const c = new InOrWithin3OfStructureColorClue(structure_color);
+        const c = new InOrWithin3OfStructureColorClue(data, structure_color);
         if (c.filter(data).find(tile => tile.x === x && tile.y === y))
             clues.push(c);
     }
@@ -266,142 +264,19 @@ export function getPerfectClueSets(clues_combination: Clue[][], data: TileData[]
     for (const clues of clues_combination) {
         let tmp: TileData[] = [...data];
         for (const clue of clues) {
-            tmp = tmp.filter(x => clue.filter(data).includes(x));
-            if (!tmp.find(tile => tile.x === x && tile.y === y) || tmp.length == 0) break;
+            tmp = clue.filter(tmp);
+            if (tmp.length == 0) break;
         }
         if (tmp.find(tile => tile.x === x && tile.y === y) && tmp.length === 1) {
             // console.log(tmp.length);
             perfect_clue_sets.push(clues);
-            break;
         }
-        console.log(tmp.length);
     }
     return perfect_clue_sets;
 }
 
 
-export const blocks: TileData[][] = [
-    [
-        { biome: Biome.WATER, x: 0, y: 0, animal: AnimalType.NONE, structure_type: StructureType.NONE, structure_color: StructureColor.BLACK },
-        { biome: Biome.WATER, x: 1, y: 0, animal: AnimalType.NONE, structure_type: StructureType.NONE, structure_color: StructureColor.BLACK },
-        { biome: Biome.WATER, x: 2, y: 0, animal: AnimalType.NONE, structure_type: StructureType.NONE, structure_color: StructureColor.BLACK },
-        { biome: Biome.WATER, x: 3, y: 0, animal: AnimalType.NONE, structure_type: StructureType.NONE, structure_color: StructureColor.BLACK },
-        { biome: Biome.FOREST, x: 4, y: 0, animal: AnimalType.NONE, structure_type: StructureType.NONE, structure_color: StructureColor.BLACK },
-        { biome: Biome.FOREST, x: 5, y: 0, animal: AnimalType.NONE, structure_type: StructureType.NONE, structure_color: StructureColor.BLACK },
-        { biome: Biome.SWAMP, x: 0, y: 1, animal: AnimalType.NONE, structure_type: StructureType.NONE, structure_color: StructureColor.BLACK },
-        { biome: Biome.SWAMP, x: 1, y: 1, animal: AnimalType.NONE, structure_type: StructureType.NONE, structure_color: StructureColor.BLACK },
-        { biome: Biome.WATER, x: 2, y: 1, animal: AnimalType.NONE, structure_type: StructureType.NONE, structure_color: StructureColor.BLACK },
-        { biome: Biome.DESERT, x: 3, y: 1, animal: AnimalType.NONE, structure_type: StructureType.NONE, structure_color: StructureColor.WHITE },
-        { biome: Biome.FOREST, x: 4, y: 1, animal: AnimalType.NONE, structure_type: StructureType.NONE, structure_color: StructureColor.BLACK },
-        { biome: Biome.FOREST, x: 5, y: 1, animal: AnimalType.NONE, structure_type: StructureType.NONE, structure_color: StructureColor.BLACK },
-        { biome: Biome.SWAMP, x: 0, y: 2, animal: AnimalType.NONE, structure_type: StructureType.NONE, structure_color: StructureColor.BLACK },
-        { biome: Biome.SWAMP, x: 1, y: 2, animal: AnimalType.NONE, structure_type: StructureType.NONE, structure_color: StructureColor.BLACK },
-        { biome: Biome.DESERT, x: 2, y: 2, animal: AnimalType.NONE, structure_type: StructureType.NONE, structure_color: StructureColor.BLACK },
-        { biome: Biome.DESERT, x: 3, y: 2, animal: AnimalType.BEAR, structure_type: StructureType.NONE, structure_color: StructureColor.BLACK },
-        { biome: Biome.DESERT, x: 4, y: 2, animal: AnimalType.BEAR, structure_type: StructureType.NONE, structure_color: StructureColor.BLACK },
-        { biome: Biome.FOREST, x: 5, y: 2, animal: AnimalType.NONE, structure_type: StructureType.NONE, structure_color: StructureColor.BLACK },
-    ],
-    [
-        { biome: Biome.SWAMP, x: 0, y: 0, animal: AnimalType.PUMA, structure_type: StructureType.NONE, structure_color: StructureColor.BLACK },
-        { biome: Biome.FOREST, x: 1, y: 0, animal: AnimalType.PUMA, structure_type: StructureType.NONE, structure_color: StructureColor.BLACK },
-        { biome: Biome.FOREST, x: 2, y: 0, animal: AnimalType.PUMA, structure_type: StructureType.NONE, structure_color: StructureColor.BLACK },
-        { biome: Biome.FOREST, x: 3, y: 0, animal: AnimalType.NONE, structure_type: StructureType.NONE, structure_color: StructureColor.BLACK },
-        { biome: Biome.FOREST, x: 4, y: 0, animal: AnimalType.NONE, structure_type: StructureType.NONE, structure_color: StructureColor.BLACK },
-        { biome: Biome.FOREST, x: 5, y: 0, animal: AnimalType.NONE, structure_type: StructureType.NONE, structure_color: StructureColor.BLACK },
-        { biome: Biome.SWAMP, x: 0, y: 1, animal: AnimalType.NONE, structure_type: StructureType.NONE, structure_color: StructureColor.BLACK },
-        { biome: Biome.SWAMP, x: 1, y: 1, animal: AnimalType.NONE, structure_type: StructureType.NONE, structure_color: StructureColor.BLACK },
-        { biome: Biome.FOREST, x: 2, y: 1, animal: AnimalType.NONE, structure_type: StructureType.NONE, structure_color: StructureColor.BLACK },
-        { biome: Biome.DESERT, x: 3, y: 1, animal: AnimalType.NONE, structure_type: StructureType.NONE, structure_color: StructureColor.WHITE },
-        { biome: Biome.DESERT, x: 4, y: 1, animal: AnimalType.NONE, structure_type: StructureType.NONE, structure_color: StructureColor.BLACK },
-        { biome: Biome.DESERT, x: 5, y: 1, animal: AnimalType.NONE, structure_type: StructureType.NONE, structure_color: StructureColor.BLACK },
-        { biome: Biome.SWAMP, x: 0, y: 2, animal: AnimalType.NONE, structure_type: StructureType.NONE, structure_color: StructureColor.BLACK },
-        { biome: Biome.MOUNTAIN, x: 1, y: 2, animal: AnimalType.NONE, structure_type: StructureType.NONE, structure_color: StructureColor.BLACK },
-        { biome: Biome.MOUNTAIN, x: 2, y: 2, animal: AnimalType.NONE, structure_type: StructureType.NONE, structure_color: StructureColor.BLACK },
-        { biome: Biome.MOUNTAIN, x: 3, y: 2, animal: AnimalType.NONE, structure_type: StructureType.NONE, structure_color: StructureColor.BLACK },
-        { biome: Biome.MOUNTAIN, x: 4, y: 2, animal: AnimalType.NONE, structure_type: StructureType.NONE, structure_color: StructureColor.BLACK },
-        { biome: Biome.DESERT, x: 5, y: 2, animal: AnimalType.NONE, structure_type: StructureType.NONE, structure_color: StructureColor.BLACK },
-    ],
-    [
-        { biome: Biome.SWAMP, x: 0, y: 0, animal: AnimalType.NONE, structure_type: StructureType.NONE, structure_color: StructureColor.BLACK },
-        { biome: Biome.SWAMP, x: 1, y: 0, animal: AnimalType.NONE, structure_type: StructureType.NONE, structure_color: StructureColor.BLACK },
-        { biome: Biome.FOREST, x: 2, y: 0, animal: AnimalType.NONE, structure_type: StructureType.NONE, structure_color: StructureColor.BLACK },
-        { biome: Biome.FOREST, x: 3, y: 0, animal: AnimalType.NONE, structure_type: StructureType.NONE, structure_color: StructureColor.BLACK },
-        { biome: Biome.FOREST, x: 4, y: 0, animal: AnimalType.NONE, structure_type: StructureType.NONE, structure_color: StructureColor.BLACK },
-        { biome: Biome.WATER, x: 5, y: 0, animal: AnimalType.NONE, structure_type: StructureType.NONE, structure_color: StructureColor.BLACK },
-        { biome: Biome.SWAMP, x: 0, y: 1, animal: AnimalType.PUMA, structure_type: StructureType.NONE, structure_color: StructureColor.BLACK },
-        { biome: Biome.SWAMP, x: 1, y: 1, animal: AnimalType.PUMA, structure_type: StructureType.NONE, structure_color: StructureColor.BLACK },
-        { biome: Biome.FOREST, x: 2, y: 1, animal: AnimalType.NONE, structure_type: StructureType.NONE, structure_color: StructureColor.BLACK },
-        { biome: Biome.MOUNTAIN, x: 3, y: 1, animal: AnimalType.NONE, structure_type: StructureType.NONE, structure_color: StructureColor.WHITE },
-        { biome: Biome.WATER, x: 4, y: 1, animal: AnimalType.NONE, structure_type: StructureType.NONE, structure_color: StructureColor.BLACK },
-        { biome: Biome.WATER, x: 5, y: 1, animal: AnimalType.NONE, structure_type: StructureType.NONE, structure_color: StructureColor.BLACK },
-        { biome: Biome.MOUNTAIN, x: 0, y: 2, animal: AnimalType.PUMA, structure_type: StructureType.NONE, structure_color: StructureColor.BLACK },
-        { biome: Biome.MOUNTAIN, x: 1, y: 2, animal: AnimalType.NONE, structure_type: StructureType.NONE, structure_color: StructureColor.BLACK },
-        { biome: Biome.MOUNTAIN, x: 2, y: 2, animal: AnimalType.NONE, structure_type: StructureType.NONE, structure_color: StructureColor.BLACK },
-        { biome: Biome.MOUNTAIN, x: 3, y: 2, animal: AnimalType.NONE, structure_type: StructureType.NONE, structure_color: StructureColor.BLACK },
-        { biome: Biome.WATER, x: 4, y: 2, animal: AnimalType.NONE, structure_type: StructureType.NONE, structure_color: StructureColor.BLACK },
-        { biome: Biome.WATER, x: 5, y: 2, animal: AnimalType.NONE, structure_type: StructureType.NONE, structure_color: StructureColor.BLACK },
-    ],
-    [
-        { biome: Biome.DESERT, x: 0, y: 0, animal: AnimalType.PUMA, structure_type: StructureType.NONE, structure_color: StructureColor.BLACK },
-        { biome: Biome.DESERT, x: 1, y: 0, animal: AnimalType.PUMA, structure_type: StructureType.NONE, structure_color: StructureColor.BLACK },
-        { biome: Biome.MOUNTAIN, x: 2, y: 0, animal: AnimalType.PUMA, structure_type: StructureType.NONE, structure_color: StructureColor.BLACK },
-        { biome: Biome.MOUNTAIN, x: 3, y: 0, animal: AnimalType.NONE, structure_type: StructureType.NONE, structure_color: StructureColor.BLACK },
-        { biome: Biome.MOUNTAIN, x: 4, y: 0, animal: AnimalType.NONE, structure_type: StructureType.NONE, structure_color: StructureColor.BLACK },
-        { biome: Biome.MOUNTAIN, x: 5, y: 0, animal: AnimalType.NONE, structure_type: StructureType.NONE, structure_color: StructureColor.BLACK },
-        { biome: Biome.DESERT, x: 0, y: 1, animal: AnimalType.NONE, structure_type: StructureType.NONE, structure_color: StructureColor.BLACK },
-        { biome: Biome.DESERT, x: 1, y: 1, animal: AnimalType.NONE, structure_type: StructureType.NONE, structure_color: StructureColor.BLACK },
-        { biome: Biome.MOUNTAIN, x: 2, y: 1, animal: AnimalType.NONE, structure_type: StructureType.NONE, structure_color: StructureColor.BLACK },
-        { biome: Biome.WATER, x: 3, y: 1, animal: AnimalType.NONE, structure_type: StructureType.NONE, structure_color: StructureColor.WHITE },
-        { biome: Biome.WATER, x: 4, y: 1, animal: AnimalType.NONE, structure_type: StructureType.NONE, structure_color: StructureColor.BLACK },
-        { biome: Biome.WATER, x: 5, y: 1, animal: AnimalType.PUMA, structure_type: StructureType.NONE, structure_color: StructureColor.BLACK },
-        { biome: Biome.DESERT, x: 0, y: 2, animal: AnimalType.NONE, structure_type: StructureType.NONE, structure_color: StructureColor.BLACK },
-        { biome: Biome.DESERT, x: 1, y: 2, animal: AnimalType.NONE, structure_type: StructureType.NONE, structure_color: StructureColor.BLACK },
-        { biome: Biome.DESERT, x: 2, y: 2, animal: AnimalType.NONE, structure_type: StructureType.NONE, structure_color: StructureColor.BLACK },
-        { biome: Biome.FOREST, x: 3, y: 2, animal: AnimalType.NONE, structure_type: StructureType.NONE, structure_color: StructureColor.BLACK },
-        { biome: Biome.FOREST, x: 4, y: 2, animal: AnimalType.NONE, structure_type: StructureType.NONE, structure_color: StructureColor.BLACK },
-        { biome: Biome.FOREST, x: 5, y: 2, animal: AnimalType.NONE, structure_type: StructureType.NONE, structure_color: StructureColor.BLACK },
-    ],
-    [
-        { biome: Biome.SWAMP, x: 0, y: 0, animal: AnimalType.BEAR, structure_type: StructureType.NONE, structure_color: StructureColor.BLACK },
-        { biome: Biome.SWAMP, x: 1, y: 0, animal: AnimalType.BEAR, structure_type: StructureType.NONE, structure_color: StructureColor.BLACK },
-        { biome: Biome.SWAMP, x: 2, y: 0, animal: AnimalType.NONE, structure_type: StructureType.NONE, structure_color: StructureColor.BLACK },
-        { biome: Biome.MOUNTAIN, x: 3, y: 0, animal: AnimalType.NONE, structure_type: StructureType.NONE, structure_color: StructureColor.BLACK },
-        { biome: Biome.MOUNTAIN, x: 4, y: 0, animal: AnimalType.NONE, structure_type: StructureType.NONE, structure_color: StructureColor.BLACK },
-        { biome: Biome.MOUNTAIN, x: 5, y: 0, animal: AnimalType.NONE, structure_type: StructureType.NONE, structure_color: StructureColor.BLACK },
-        { biome: Biome.SWAMP, x: 0, y: 1, animal: AnimalType.BEAR, structure_type: StructureType.NONE, structure_color: StructureColor.BLACK },
-        { biome: Biome.DESERT, x: 1, y: 1, animal: AnimalType.NONE, structure_type: StructureType.NONE, structure_color: StructureColor.BLACK },
-        { biome: Biome.DESERT, x: 2, y: 1, animal: AnimalType.NONE, structure_type: StructureType.NONE, structure_color: StructureColor.BLACK },
-        { biome: Biome.WATER, x: 3, y: 1, animal: AnimalType.NONE, structure_type: StructureType.NONE, structure_color: StructureColor.WHITE },
-        { biome: Biome.MOUNTAIN, x: 4, y: 1, animal: AnimalType.NONE, structure_type: StructureType.NONE, structure_color: StructureColor.BLACK },
-        { biome: Biome.MOUNTAIN, x: 5, y: 1, animal: AnimalType.NONE, structure_type: StructureType.NONE, structure_color: StructureColor.BLACK },
-        { biome: Biome.DESERT, x: 0, y: 2, animal: AnimalType.NONE, structure_type: StructureType.NONE, structure_color: StructureColor.BLACK },
-        { biome: Biome.DESERT, x: 1, y: 2, animal: AnimalType.NONE, structure_type: StructureType.NONE, structure_color: StructureColor.BLACK },
-        { biome: Biome.WATER, x: 2, y: 2, animal: AnimalType.NONE, structure_type: StructureType.NONE, structure_color: StructureColor.BLACK },
-        { biome: Biome.WATER, x: 3, y: 2, animal: AnimalType.NONE, structure_type: StructureType.NONE, structure_color: StructureColor.BLACK },
-        { biome: Biome.WATER, x: 4, y: 2, animal: AnimalType.NONE, structure_type: StructureType.NONE, structure_color: StructureColor.BLACK },
-        { biome: Biome.WATER, x: 5, y: 2, animal: AnimalType.NONE, structure_type: StructureType.NONE, structure_color: StructureColor.BLACK },
-    ],
-    [
-        { biome: Biome.DESERT, x: 0, y: 0, animal: AnimalType.BEAR, structure_type: StructureType.NONE, structure_color: StructureColor.BLACK },
-        { biome: Biome.DESERT, x: 1, y: 0, animal: AnimalType.NONE, structure_type: StructureType.NONE, structure_color: StructureColor.BLACK },
-        { biome: Biome.SWAMP, x: 2, y: 0, animal: AnimalType.PUMA, structure_type: StructureType.NONE, structure_color: StructureColor.BLACK },
-        { biome: Biome.SWAMP, x: 3, y: 0, animal: AnimalType.NONE, structure_type: StructureType.NONE, structure_color: StructureColor.BLACK },
-        { biome: Biome.SWAMP, x: 4, y: 0, animal: AnimalType.NONE, structure_type: StructureType.NONE, structure_color: StructureColor.BLACK },
-        { biome: Biome.FOREST, x: 5, y: 0, animal: AnimalType.NONE, structure_type: StructureType.NONE, structure_color: StructureColor.BLACK },
-        { biome: Biome.MOUNTAIN, x: 0, y: 1, animal: AnimalType.BEAR, structure_type: StructureType.NONE, structure_color: StructureColor.BLACK },
-        { biome: Biome.MOUNTAIN, x: 1, y: 1, animal: AnimalType.NONE, structure_type: StructureType.NONE, structure_color: StructureColor.BLACK },
-        { biome: Biome.SWAMP, x: 2, y: 1, animal: AnimalType.NONE, structure_type: StructureType.NONE, structure_color: StructureColor.BLACK },
-        { biome: Biome.SWAMP, x: 3, y: 1, animal: AnimalType.NONE, structure_type: StructureType.NONE, structure_color: StructureColor.WHITE },
-        { biome: Biome.FOREST, x: 4, y: 1, animal: AnimalType.NONE, structure_type: StructureType.NONE, structure_color: StructureColor.BLACK },
-        { biome: Biome.FOREST, x: 5, y: 1, animal: AnimalType.NONE, structure_type: StructureType.NONE, structure_color: StructureColor.BLACK },
-        { biome: Biome.MOUNTAIN, x: 0, y: 2, animal: AnimalType.NONE, structure_type: StructureType.NONE, structure_color: StructureColor.BLACK },
-        { biome: Biome.WATER, x: 1, y: 2, animal: AnimalType.NONE, structure_type: StructureType.NONE, structure_color: StructureColor.BLACK },
-        { biome: Biome.WATER, x: 2, y: 2, animal: AnimalType.NONE, structure_type: StructureType.NONE, structure_color: StructureColor.BLACK },
-        { biome: Biome.WATER, x: 3, y: 2, animal: AnimalType.NONE, structure_type: StructureType.NONE, structure_color: StructureColor.BLACK },
-        { biome: Biome.WATER, x: 4, y: 2, animal: AnimalType.NONE, structure_type: StructureType.NONE, structure_color: StructureColor.BLACK },
-        { biome: Biome.FOREST, x: 5, y: 2, animal: AnimalType.NONE, structure_type: StructureType.NONE, structure_color: StructureColor.BLACK },
-    ]
-]
+
 
 // for (let i = 0; i < 12; i++) {
 //     for (let j = 0; j < 6; j++) {
