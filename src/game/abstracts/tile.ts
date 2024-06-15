@@ -36,7 +36,7 @@ export default abstract class Tile extends Drawable {
 
     public draw() {
         this.p.fill(this.color);
-        this.p.stroke(255);
+        this.p.stroke(0);
         this.p.push();
         this.p.translate(this.pos.x, this.pos.y);
         Tile.drawHex(this.p, this.width);

@@ -5,7 +5,7 @@ import TileGroup from './game/tileGroup';
 import { ClueGenerator } from './server/gameGenerator';
 
 export let dragManager: HoverManager;
-export let clueGenerator = new ClueGenerator("cryptide");
+export let clueGenerator = new ClueGenerator("cryptide2");
 let tiles;
 export const sketch = (p: p5) => {
 
@@ -21,7 +21,7 @@ export const sketch = (p: p5) => {
     };
 
     p.draw = () => {
-        p.background(0);
+        p.background(37, 115, 87);
         dragManager.update();
         for (let drawable of Drawable.drawables.filter(d => !d.invisible).sort((a, b) => a.z - b.z)) {
             drawable.draw(); // TODO: Check if it's in the right order
