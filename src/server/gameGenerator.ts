@@ -1,7 +1,7 @@
 import Rand from "rand-seed";
 import { TileData } from "../game/abstracts/tileData";
 import blocks from "./original_blocks";
-import { AnimalType, StructureColor, StructureType } from "../game/enums";
+import { AnimalType, Biome, StructureColor, StructureType } from "../game/enums";
 
 export function shuffleArray(array: any[], seed: string) {
     const rand = new Rand(seed == "" ? undefined : seed);
@@ -13,26 +13,26 @@ export function shuffleArray(array: any[], seed: string) {
 
 class ClueGenerator {
 	private seed: string;
-	private data: TileData[];
+	private data: Map<number, TileData> = new Map();
 	// For each range, we store the tiles that are within that range of each animal type
-	private animalTiles: TileData[][][] = []; // [range][AnimalType][]
+	private animalTiles: Map<number, TileData>[][] = []; // [range][AnimalType][]
 	// For each range, we store the tiles that are within that range of each structure type
-	private structureTypeTiles: TileData[][][] = []; // [range][StructureType][]
+	private structureTypeTiles: Map<number, TileData>[][] = []; // [range][StructureType][]
 	// For each range, we store the tiles that are within that range of each structure color
-	private structureColorTiles: TileData[][][] = []; // [range][StructureType][]
+	private structureColorTiles: Map<number, TileData>[][] = []; // [range][StructureType][]
+	private biomeTiles: Map<number, TileData>[][] = [];
 
-	// For more speed we could replace the TileData[][][] with a Map<string, TileData>[][] with the string being something like "x + y * 9"
-	// So we could replace animalTiles[range][AnimalType].find(t => t.x === x && t.y === y) with animalTiles[range][AnimalType].get(x + y * 9)
-	// This would be faster because the find function is O(n) while the get function is usually O(1)
-	// TODO: Implement the above
+	// For more speed we replaced the TileData[][][] with a Map<number, TileData>[][] with the key being something like "x + y * width"
+	// So we also replaced animalTiles[range][AnimalType].find(t => t.x === x && t.y === y) with animalTiles[range][AnimalType].get(x + y * 9)
+	// This should be faster because the find function is O(n) while the get function is usually O(1)
 
 	constructor(seed = "cryptide") {
 		this.seed = seed;
 		this.data = this.generateData();
 	}
 
-	private generateData(): TileData[] {
-		const data: TileData[] = [];
+	private generateData(): Map<number, TileData> {
+		const data: Map<number, TileData> = new Map();
 		const sblocks = [...blocks];
 		shuffleArray(sblocks, this.seed); // TODO: Handle block rotation
 
@@ -42,7 +42,7 @@ class ClueGenerator {
 				const td = sblocks[block_i][(i % 6) + (j % 3) * 6];
 				td.x = i;
 				td.y = j;
-				data.push(td);
+				data.set(i + j * 12, td);
 			}
 		}
 
@@ -51,7 +51,7 @@ class ClueGenerator {
 			for (let colori in StructureColor) {
 				const type = parseInt(typei);
 				const color = parseInt(colori);
-				const i = Math.floor(rand.next() * data.length);
+				const i = Math.floor(rand.next() * data.size);
 				data[i].structure_type = type;
 				data[i].structure_color = color;
 			}
@@ -59,6 +59,7 @@ class ClueGenerator {
 
 		this.generateAnimalTiles();
 		this.generateStructureTiles();
+		this.generateBiomeTiles();
 		return data;
 	}
 
@@ -66,16 +67,15 @@ class ClueGenerator {
 		for (let i = 1; i < 2; i++) {
 			this.animalTiles.push([]);
 			for (let _ in AnimalType) {
-				this.animalTiles[i].push([]);
+				this.animalTiles[i].push(new Map());
 			}
-			for (let tile of this.data) {
+			for (let [_key, tile] of this.data) {
 				for (let animalTypei in AnimalType) {
 					const animalType = parseInt(animalTypei);
 					if (tile.animal == animalType) {
 						const neighbors = this.getNeighbors(tile, i);
-						for (let neighbor of neighbors) {
-							if (!this.animalTiles[i][animalType].find(t => t.x === neighbor.x && t.y === neighbor.y))
-								this.animalTiles[i][animalType].push(neighbor);
+						for (let [_key2, neighbor] of neighbors) {
+							this.animalTiles[i][animalType].set(neighbor.x + neighbor.y * 12, neighbor);
 						}
 					}
 				}
@@ -87,16 +87,15 @@ class ClueGenerator {
 		let i = 2;
 		this.structureTypeTiles.push([]);
 		for (let _ in StructureType) {
-			this.structureTypeTiles[i].push([]);
+			this.structureTypeTiles[i].push(new Map());
 		}
-		for (let tile of this.data) {
+		for (let [_, tile] of this.data) {
 			for (let structureTypei in StructureType) {
 				const structureType = parseInt(structureTypei);
 				if (tile.structure_type == structureType) {
 					const neighbors = this.getNeighbors(tile, i);
-					for (let neighbor of neighbors) {
-						if (!this.structureTypeTiles[i][structureType].find(t => t.x === neighbor.x && t.y === neighbor.y))
-							this.structureTypeTiles[i][structureType].push(neighbor);
+					for (let [_, neighbor] of neighbors) {
+						this.structureTypeTiles[i][structureType].set(neighbor.x + neighbor.y * 12, neighbor);
 					}
 				}
 			}
@@ -105,20 +104,40 @@ class ClueGenerator {
 		i = 3;
 		this.structureColorTiles.push([]);
 		for (let _ in StructureColor) {
-			this.structureColorTiles[i].push([]);
+			this.structureColorTiles[i].push(new Map());
 		}
-		for (let tile of this.data) {
+		for (let [_, tile] of this.data) {
 			for (let structureColori in StructureColor) {
 				const structureColor = parseInt(structureColori);
 				if (tile.structure_color == structureColor) {
 					const neighbors = this.getNeighbors(tile, i);
-					for (let neighbor of neighbors) {
-						if (!this.structureColorTiles[i][structureColor].find(t => t.x === neighbor.x && t.y === neighbor.y))
-							this.structureColorTiles[i][structureColor].push(neighbor);
+					for (let [_, neighbor] of neighbors) {
+						this.structureColorTiles[i][structureColor].set(neighbor.x + neighbor.y * 12, neighbor);
 					}
 				}
 			}
 		}
+	}
+
+	private generateBiomeTiles() {
+		for (let i = 0; i < 1; i++) {
+			this.biomeTiles.push([]);
+			for (let _ in Biome) {
+				this.biomeTiles[i].push(new Map());
+			}
+			for (let [_, tile] of this.data) {
+				for (let biomei in Biome) {
+					const biome = parseInt(biomei);
+					if (tile.biome == biome) {
+						const neighbors = this.getNeighbors(tile, i);
+						for (let [_, neighbor] of neighbors) {
+							this.biomeTiles[i][biome].set(neighbor.x + neighbor.y * 12, neighbor);
+						}
+					}
+				}
+			}
+		}
+	
 	}
 
 	private static oddq_direction_differences = [
@@ -143,8 +162,8 @@ class ClueGenerator {
 	 * @param distance The distance from the tile to get the neighbors of
 	 * @returns The neighbors of the tile at the given distance
 	 */
-    public getNeighbors(tile: TileData, distance: number): TileData[] {
-        const neighbors: TileData[] = [];
+    public getNeighbors(tile: TileData, distance: number): Map<number, TileData> {
+        const neighbors: Map<number, TileData> = new Map();
         let toVisit: TileData[] = [tile];
         let tmp: number[][] = [];
 
@@ -152,8 +171,7 @@ class ClueGenerator {
             while (toVisit.length > 0) {
                 const current = toVisit.pop();
                 if (current) {
-                    if (!neighbors.find(neighbor => neighbor.x === current.x && neighbor.y === current.y))
-                        neighbors.push(current);
+					neighbors.set(current.x + current.y * 12, current);
 
                     for (let i = 0; i < 6; i++) {
                         const hex = { col: current.x, row: current.y };
@@ -164,7 +182,7 @@ class ClueGenerator {
                 }
             }
             for (const pos of tmp) {
-                const tile = this.data.find(tile => tile.x === pos[0] && tile.y === pos[1]);
+                const tile = this.data.get(pos[0] + pos[1] * 12);
                 if (tile) toVisit.push(tile);
             }
             tmp = [];
