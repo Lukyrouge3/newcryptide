@@ -20,9 +20,9 @@ export default class GameTile extends Tile {
     public data: TileData;
     public highlighted: boolean = false;
 
-    constructor(p: p5, x: number, y: number, data: TileData) {
+    constructor(p: p5, x: number, y: number, data: TileData, width: number) {
         const color = biomeColors(p)[data.biome];
-        super(p, x, y, color);
+        super(p, x, y, color, width);
         this.col = data.x;
         this.row = data.y;
         this.biome = data.biome;
@@ -43,25 +43,28 @@ export default class GameTile extends Tile {
     private drawAnimal() {
         this.p.push();
         this.p.translate(this.pos.x, this.pos.y);
-        this.p.stroke(0);
-        this.p.strokeWeight(1);
         this.p.noFill();
-        const width = this.p.textWidth(AnimalType[this.data.animal]);
-        this.p.text(AnimalType[this.data.animal], -width / 2, this.p.textAscent() / 2 + 15);
+        if (this.data.animal == AnimalType.BEAR) {
+            this.p.drawingContext.setLineDash([5, 5]);
+            this.p.stroke(0);
+        }
+        if (this.data.animal == AnimalType.PUMA) this.p.stroke(255, 0, 0);
+        this.p.strokeWeight(2);
+        Tile.drawHex(this.p, this.width - 4);        
         this.p.pop();
     }
 
     private drawStructure() {
         this.p.push();
         this.p.translate(this.pos.x, this.pos.y);
-        if (this.data.structure_color == StructureColor.BLACK) this.p.stroke(0);
-        if (this.data.structure_color == StructureColor.BLUE) this.p.stroke(0, 0, 255);
-        if (this.data.structure_color == StructureColor.WHITE) this.p.stroke(255);
-        if (this.data.structure_color == StructureColor.GREEN) this.p.stroke(0, 255, 0);
+        if (this.data.structure_color == StructureColor.BLACK) this.p.fill(0, 0, 0);
+        if (this.data.structure_color == StructureColor.BLUE) this.p.fill(50, 50, 255);
+        if (this.data.structure_color == StructureColor.WHITE) this.p.fill(255, 255, 255);
+        if (this.data.structure_color == StructureColor.GREEN) this.p.fill(75, 255, 66);
+        this.p.stroke(0);
         this.p.strokeWeight(1);
-        this.p.noFill();
-        const width = this.p.textWidth(StructureType[this.data.structure_type]);
-        this.p.text(StructureType[this.data.structure_type], -width / 2, this.p.textAscent() / 2 + 30);
+        if (this.data.structure_type == StructureType.CABIN) Tile.drawTriangle(this.p, this.width / 1.5);
+        if (this.data.structure_type == StructureType.STONE) Tile.drawCircle(this.p, this.width / 1.5);
         this.p.pop();
     }
 
@@ -73,12 +76,12 @@ export default class GameTile extends Tile {
             this.p.strokeWeight(4);
             this.p.noFill();
             this.p.beginShape();
-            this.p.vertex(-Tile.width, 0);
-            this.p.vertex(-1 / 2 * Tile.width, 1 / 2 * this.p.sqrt(3) * Tile.width);
-            this.p.vertex(1 / 2 * Tile.width, 1 / 2 * this.p.sqrt(3) * Tile.width);
-            this.p.vertex(Tile.width, 0);
-            this.p.vertex(1 / 2 * Tile.width, -1 / 2 * this.p.sqrt(3) * Tile.width);
-            this.p.vertex(-1 / 2 * Tile.width, -1 / 2 * this.p.sqrt(3) * Tile.width);
+            this.p.vertex(-this.width, 0);
+            this.p.vertex(-1 / 2 * this.width, 1 / 2 * this.p.sqrt(3) * this.width);
+            this.p.vertex(1 / 2 * this.width, 1 / 2 * this.p.sqrt(3) * this.width);
+            this.p.vertex(this.width, 0);
+            this.p.vertex(1 / 2 * this.width, -1 / 2 * this.p.sqrt(3) * this.width);
+            this.p.vertex(-1 / 2 * this.width, -1 / 2 * this.p.sqrt(3) * this.width);
             this.p.endShape(this.p.CLOSE);
             this.p.pop();
         }
@@ -86,14 +89,14 @@ export default class GameTile extends Tile {
 
     public draw() {
         super.draw();
-        this.drawCoords();
+        // this.drawCoords();
         if (this.data.animal != AnimalType.NONE) {
             this.drawAnimal();
         }
         if (this.data.structure_type != StructureType.NONE) {
             this.drawStructure();
         }
-        this.drawHighlight();
+        // this.drawHighlight();
     }
 
     public onMousePressed(): void {

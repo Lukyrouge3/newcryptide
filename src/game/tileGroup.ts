@@ -1,37 +1,7 @@
 import p5 from "p5";
 import Tile from "./abstracts/tile";
-import GameTile, { Biome } from "./gameTile";
-import Rand, {PRNG} from 'rand-seed';
-import { Clue, TileData, blocks } from "../clueGenerator";
-
-export type Block = {
-    biomes: Biome[][],
-    id: number,
-    bears: number[][],
-    puma: number[],
-    structures: number[]
-}
-
-export type Structure = {
-    id: number,
-    color: number,
-    type: number
-}
-
-export function generateMap(width: number, height: number, seed: string) {
-    const shuffledBlocks = [...blocks];
-    shuffleArray(shuffledBlocks, seed);
-    const map: TileData[][] = [];
-    for (let i = 0; i < width; i++) {
-        map.push([]);
-        for (let j = 0; j < height; j++) {
-            const block_i = Math.floor(i / 6) + Math.floor(j / 3) * 2;
-            map[i].push(shuffledBlocks[block_i][(i % 6) + (j % 3) * 6]);
-        }
-    }
-    console.log(map);
-    return map;
-}
+import { TileData } from "./abstracts/tileData";
+import GameTile from "./gameTile";
 
 export default class TileGroup {
     public tiles: GameTile[] = [];
@@ -45,26 +15,33 @@ export default class TileGroup {
         }
         for (let i = 0; i < width; i++) {
             for (let j = 0; j < height; j++) {
-                const nx = x + i * Tile.width * 1.5 - 1;
-                const ny = y + j * Tile.width * (p.sqrt(3) / 2) * 2 + (i % 2) * Tile.width * p.sqrt(3) / 2;
+                const maxHeight = (p.height - 2 * x) / height;
+                const maxWidth = (p.width - 2 * y) / width;
+                let w = maxWidth;
 
+                if (maxHeight / Math.sqrt(3) < maxWidth) {
+                    w = maxHeight / Math.sqrt(3);
+                }
+
+                const nx = x + i * w * 1.5 - 1;
+                const ny = y + j * w * (p.sqrt(3) / 2) * 2 + (i % 2) * w * p.sqrt(3) / 2;
                 const block = this.data.find(d => d.x == i && d.y == j)!;
                 if (!block) throw new Error(`No block found at ${i}, ${j}`);
 
-                this.tiles.push(new GameTile(p, nx, ny, block));
+                this.tiles.push(new GameTile(p, nx, ny, block, w));
             }
         }
     }
 
-    public highlightNeighbors(x: number, y: number, n: number) {
-        const neighbors = Clue.getNeighbors(this.data, this.data.find(t => t.x == x && t.y == y)!, n);
-        for (let neighbor of neighbors) {
-            const tile = this.tiles.find(t => t.data.x == neighbor.x && t.data.y == neighbor.y);
-            if (tile) {
-                tile.onMouseEnter();
-            }
-        }
-    }
+    // public highlightNeighbors(x: number, y: number, n: number) {
+    //     const neighbors = Clue.getNeighbors(this.data, this.data.find(t => t.x == x && t.y == y)!, n);
+    //     for (let neighbor of neighbors) {
+    //         const tile = this.tiles.find(t => t.data.x == neighbor.x && t.data.y == neighbor.y);
+    //         if (tile) {
+    //             tile.onMouseEnter();
+    //         }
+    //     }
+    // }
 
     public highlightTiles(tiles: TileData[]) {
         for (let tile of tiles) {

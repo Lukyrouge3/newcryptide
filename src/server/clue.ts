@@ -1,6 +1,6 @@
 import { assert } from "console";
 import { TileData } from "../game/abstracts/tileData";
-import { AnimalType, Biome } from "../game/enums";
+import { AnimalType, Biome, StructureColor, StructureType } from "../game/enums";
 
 export abstract class Clue {
     public abstract filter(data: Map<number, TileData>): Map<number, TileData>;
@@ -35,13 +35,11 @@ export class InBiomeAmongTwoClue extends Clue {
 export class InOrNextToBiomeOrAnimalClue extends Clue {
     private biome: Biome | null;
     private animal: AnimalType;
-    private animalTiles: Map<number, TileData>;
-    private biomeTiles: Map<number, TileData>;
+    private tiles: Map<number, TileData>;
 
-    constructor(biomeTiles: Map<number, TileData>, animalTiles: Map<number, TileData>, biome: Biome | null, animal: AnimalType) {
+    constructor(tiles: Map<number, TileData>, biome: Biome | null, animal: AnimalType) {
         super();
-        this.biomeTiles = biomeTiles;
-        this.animalTiles = animalTiles;
+        this.tiles = tiles;
         this.biome = biome;
         this.animal = animal;
 
@@ -52,13 +50,64 @@ export class InOrNextToBiomeOrAnimalClue extends Clue {
         const result = new Map(data);
         if (this.biome != null) {
             for (const [key, _] of result) {
-                if (this.biomeTiles.get(key) == undefined) result.delete(key);
+                if (this.tiles.get(key) == undefined) result.delete(key);
             }
         }
         if (this.animal != AnimalType.NONE) {
             for (const [key, _] of result) {
+                if (this.tiles.get(key) == undefined) result.delete(key);
+            }
+        }
+        return result;
+    }
+}
+
+export class InOrWithin2OfAnimalOrStructureClue extends Clue {
+    private animal: AnimalType;
+    private structure: StructureType;
+    private animalTiles: Map<number, TileData>;
+    private structureTiles: Map<number, TileData>;
+
+    constructor(animalTiles: Map<number, TileData>, structureTiles: Map<number, TileData>, animal: AnimalType, structure: StructureType) {
+        super();
+        this.animalTiles = animalTiles;
+        this.structureTiles = structureTiles;
+        this.animal = animal;
+        this.structure = structure;
+
+        assert(animal != AnimalType.NONE || structure != StructureType.NONE, "animal and structure cannot both be null");
+    }
+
+    public filter(data: Map<number, TileData>): Map<number, TileData> {
+        const result = new Map(data);
+        if (this.animal != AnimalType.NONE) {
+            for (const [key, _] of result) {
                 if (this.animalTiles.get(key) == undefined) result.delete(key);
             }
+        }
+        if (this.structure != StructureType.NONE) {
+            for (const [key, _] of result) {
+                if (this.structureTiles.get(key) == undefined) result.delete(key);
+            }
+        }
+        return result;
+    }
+}
+
+export class InOrWithin3OfStructureColorClue extends Clue {
+    private color: StructureColor;
+    private structureTiles: Map<number, TileData>;
+
+    constructor(structureTiles: Map<number, TileData>, color: StructureColor) {
+        super();
+        this.structureTiles = structureTiles;
+        this.color = color;
+    }
+
+    public filter(data: Map<number, TileData>): Map<number, TileData> {
+        const result = new Map(data);
+        for (const [key, _] of result) {
+            if (this.structureTiles.get(key) == undefined) result.delete(key);
         }
         return result;
     }
