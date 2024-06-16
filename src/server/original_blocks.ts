@@ -1,5 +1,5 @@
-import { TileData } from "../game/abstracts/tileData";
-import { AnimalType, Biome, StructureColor, StructureType } from "../game/enums";
+import { TileData } from "../client/game/abstracts/tileData";
+import { AnimalType, Biome, StructureColor, StructureType } from "../client/game/enums";
 
 const blocks: TileData[][] = [
     [

@@ -1,7 +1,7 @@
 import Rand from "rand-seed";
-import { TileData } from "../game/abstracts/tileData";
+import { TileData } from "../client/game/abstracts/tileData";
 import blocks from "./original_blocks";
-import { AnimalType, Biome, StructureColor, StructureType } from "../game/enums";
+import { AnimalType, Biome, StructureColor, StructureType } from "../client/game/enums";
 import { Clue, InBiomeAmongTwoClue, InOrNextToBiomeOrAnimalClue, InOrWithin2OfAnimalOrStructureClue, InOrWithin3OfStructureColorClue } from "./clue";
 
 export function shuffleArray(array: any[], seed: string) {

@@ -1,6 +1,6 @@
 import { assert } from "console";
-import { TileData } from "../game/abstracts/tileData";
-import { AnimalType, Biome, StructureColor, StructureType } from "../game/enums";
+import { TileData } from "../client/game/abstracts/tileData";
+import { AnimalType, Biome, StructureColor, StructureType } from "../client/game/enums";
 
 export abstract class Clue {
     public abstract filter(data: Map<number, TileData>): Map<number, TileData>;

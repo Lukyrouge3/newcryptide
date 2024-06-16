@@ -8,7 +8,7 @@ export default class TileGroup {
     private data: TileData[];
     private static instance: TileGroup;
 
-    constructor(p: p5, x: number, y: number, width: number, height: number, data: TileData[], seed: string = "") {
+    constructor(p: p5, x: number, y: number, width: number, height: number, data: TileData[]) {
         this.data = data;
         if (!TileGroup.instance) {
             TileGroup.instance = this;
