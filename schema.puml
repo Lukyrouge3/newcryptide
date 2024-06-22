@@ -1,0 +1,38 @@
+@startuml Cryptide
+!theme blueprint
+start
+:Join a discord activity;
+if (Game started ?) then (yes)
+    if (Player was already in the game (reco) ?) then (yes)
+        :Join the game;
+    else (no)
+        :Wait for the next game / spectate;
+        kill
+    endif
+endif
+while (2 > players > 6 and all ready ?)
+    :Wait to get enough players and all ready;
+endwhile
+:Start the game;
+:Every player places 2 "no" cubes;
+repeat
+    if (Player tries a guess) then (yes)
+        :Player tries a guess;
+        if (Guess is correct ?) then (yes)
+            :Player wins;
+            break
+        else (no)
+            :Player has to place a cube;
+        endif
+    else (no)
+        :Player asks a question to player X;
+        if (Player X says) then (no)
+            :Player X places a cube;
+            :Current player places a cube;
+        else (yes)
+            :Player X places a circle;
+        endif
+    endif
+repeat while (Game not finished ?)
+stop
+@enduml

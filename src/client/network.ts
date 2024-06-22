@@ -6,7 +6,6 @@ export class NetworkInterface {
         op.headers = {
             "Content-Type": "application/json",
             "Accept": "application/json",
-            "Access-Control-Allow-Origin": "*"
         };
         op.method = "GET";
         const response = await fetch(`http://localhost:8080/${room}/${path}`, op);

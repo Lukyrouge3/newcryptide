@@ -5,7 +5,8 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "dev": "vite",
-    "dev-server": "tsnd --respawn src/server/index.ts"
+    "dev-server": "tsnd --respawn src/server/index.ts",
+    "dev-test": "tsnd --respawn test.ts"
   },
   "author": "",
   "license": "ISC",
@@ -14,13 +15,16 @@
     "cors": "^2.8.5",
     "express": "^4.19.2",
     "p5": "^1.9.4",
-    "rand-seed": "^1.0.2"
+    "rand-seed": "^1.0.2",
+    "socket.io": "^4.7.5",
+    "socket.io-client": "^4.7.5"
   },
   "devDependencies": {
     "@types/cors": "^2.8.17",
     "@types/express": "^4.17.21",
     "@types/node": "^20.14.2",
     "@types/p5": "^1.7.6",
+    "@types/socket.io-client": "^3.0.0",
     "assert": "^2.0.0",
     "console-browserify": "^1.2.0",
     "process": "^0.11.10",

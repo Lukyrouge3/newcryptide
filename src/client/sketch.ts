@@ -2,8 +2,8 @@ import p5 from 'p5';
 import HoverManager from './game/hoverManager';
 import Drawable from './game/abstracts/drawable';
 import TileGroup from './game/tileGroup';
-import { ClueGenerator } from '../server/gameGenerator';
 import { NetworkInterface } from './network';
+import { UIElement } from './ui/ui';
 
 export let dragManager: HoverManager;
 // export let clueGenerator = new ClueGenerator("cryptide2");
@@ -20,6 +20,8 @@ export const sketch = (p: p5) => {
 
         let tileData = await NetworkInterface.getTileData();
         tiles = new TileGroup(p, 100, 100, 12, 9, Array.from(tileData.values()));
+
+        // let playerList = new PlayerList(p, p.width - 200, 0);
     };
 
     p.draw = () => {
@@ -27,6 +29,10 @@ export const sketch = (p: p5) => {
         dragManager.update();
         for (let drawable of Drawable.drawables.filter(d => !d.invisible).sort((a, b) => a.z - b.z)) {
             drawable.draw(); // TODO: Check if it's in the right order
+        }
+
+        for (let uiEl of UIElement.uiElements) {
+            uiEl.draw();
         }
 
         p.push();

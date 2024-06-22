@@ -39,7 +39,6 @@ app.get('/:room/tiles', (req: Request, res: Response) => {
         clueGenerator = new ClueGenerator(room);
         clueGenerators.set(room, clueGenerator);
     }
-    res.header("Access-Control-Allow-Origin", "*");
     return res.json(mapToJson(clueGenerator.data));
 });
 
