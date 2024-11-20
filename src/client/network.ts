@@ -9,7 +9,7 @@ export class NetworkInterface {
             "Access-Control-Allow-Origin": "*"
         };
         op.method = "GET";
-        const response = await fetch(`http://localhost:8080/${room}/${path}`, op);
+        const response = await fetch(`http://localhost:8081/${room}/${path}`, op);
         return response.json();
     }
 

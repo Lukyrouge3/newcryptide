@@ -9,6 +9,31 @@ export abstract class Clue {
     }
 }
 
+export const BiomeNames = new Map<Biome, string>([
+	[Biome.FOREST, "forest"],
+	[Biome.DESERT, "desert"],
+	[Biome.MOUNTAIN, "mountain"],
+	[Biome.WATER, "water"],
+	[Biome.SWAMP, "swamp"]
+]);
+
+export const AnimalNames = new Map<AnimalType, string>([
+	[AnimalType.PUMA, "puma"],
+	[AnimalType.BEAR, "bear"]
+]);
+
+export const StructureNames = new Map<StructureType, string>([
+	[StructureType.STONE, "stone"],
+	[StructureType.CABIN, "cabin"]
+]);
+
+export const StructureColorNames = new Map<StructureColor, string>([
+	[StructureColor.BLACK, "black"],
+	[StructureColor.WHITE, "white"],
+	[StructureColor.GREEN, "green"],
+	[StructureColor.BLUE, "blue"]
+]);
+
 export class InBiomeAmongTwoClue extends Clue {
     private biome1: Biome;
     private biome2: Biome;
@@ -30,6 +55,10 @@ export class InBiomeAmongTwoClue extends Clue {
         }
         return result;
     }
+
+	public toString(): string {
+		return `In ${BiomeNames.get(this.biome1)} or ${BiomeNames.get(this.biome2)}`;
+	}
 }
 
 export class InOrNextToBiomeOrAnimalClue extends Clue {
@@ -60,6 +89,13 @@ export class InOrNextToBiomeOrAnimalClue extends Clue {
         }
         return result;
     }
+
+	public toString(): string {
+		if (this.biome != null) {
+			return `In or next to ${BiomeNames.get(this.biome)}`;
+		}
+		return `In or next to ${AnimalNames.get(this.animal)}`;
+	}
 }
 
 export class InOrWithin2OfAnimalOrStructureClue extends Clue {
@@ -92,6 +128,13 @@ export class InOrWithin2OfAnimalOrStructureClue extends Clue {
         }
         return result;
     }
+
+	public toString(): string {
+		if (this.animal != AnimalType.NONE) {
+			return `In or within 2 of ${AnimalNames.get(this.animal)}`;
+		}
+		return `In or within 2 of ${StructureNames.get(this.structure)}`;
+	}
 }
 
 export class InOrWithin3OfStructureColorClue extends Clue {
@@ -111,4 +154,8 @@ export class InOrWithin3OfStructureColorClue extends Clue {
         }
         return result;
     }
+
+	public toString(): string {
+		return `In or within 3 of ${StructureColorNames.get(this.color)} structure`;
+	}
 }
